@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>夜レジ式 FIFAエージェント用語マスター</title>
+
+<!-- フォント：英語=Space Grotesk / 日本語=Noto Sans JP -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===================================================================
+   デザインテーマ：夜のサッカーピッチ（深い緑背景＋白いライン）
+   =================================================================== */
+:root{
+  --pitch-dark:#072418;
+  --pitch:#0b3a25;
+  --pitch-light:#10492f;
+  --pitch-stripe:#0d4129;
+  --line:rgba(255,255,255,0.90);
+  --line-soft:rgba(255,255,255,0.16);
+  --line-faint:rgba(255,255,255,0.08);
+  --text:#f4f8f5;
+  --text-dim:rgba(244,248,245,0.62);
+  --gold:#e9c45c;
+  --gold-deep:#caa23c;
+  --good:#37d98a;       /* 思い出せた / マスター */
+  --learn:#5ec8ff;      /* 学習中 */
+  --new:#9aa6a0;        /* 未学習 */
+  --flame:#ff8a3d;      /* ストリーク */
+  --radius:18px;
+  --shadow:0 18px 40px rgba(0,0,0,0.45);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:'Noto Sans JP',sans-serif; color:var(--text);
+  background:
+    repeating-linear-gradient(90deg, var(--pitch) 0 7%, var(--pitch-stripe) 7% 14%),
+    radial-gradient(120% 80% at 50% -10%, var(--pitch-light), var(--pitch-dark));
+  background-blend-mode:soft-light, normal;
+  min-height:100%; overflow-x:hidden;
+}
+.field-lines{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.9;}
+.app{position:relative; z-index:1; max-width:560px; margin:0 auto; padding:0 18px 48px;}
+
+/* ---- ボタン ---- */
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:16px 20px; border-radius:14px; font-size:16px; font-weight:700;
+  letter-spacing:0.02em; transition:transform .08s ease, opacity .15s ease, background .15s;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:linear-gradient(180deg,var(--gold),var(--gold-deep)); color:#3a2c05; box-shadow:0 10px 24px rgba(233,196,92,0.28);}
+.btn-line{background:rgba(255,255,255,0.04); border:2px solid var(--line); color:var(--text);}
+.btn-ghost{background:rgba(255,255,255,0.04); border:1px solid var(--line-soft); color:var(--text); font-weight:500;}
+.btn:disabled{opacity:0.4; pointer-events:none;}
+.btn-sm{width:auto; padding:10px 16px; font-size:14px; border-radius:11px;}
+
+/* ---- 画面切り替え ---- */
+.screen{display:none; animation:fade .35s ease;}
+.screen.active{display:block;}
+@keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+
+/* ===================================================================
+   ヘッダー
+   =================================================================== */
+.brand{text-align:center; padding:26px 0 14px;}
+.brand .mark{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.40em; color:var(--gold); text-transform:uppercase;}
+.brand h1{margin:6px 0 0; font-size:21px; font-weight:900; letter-spacing:0.01em;}
+.brand .sub{margin-top:4px; font-size:12px; color:var(--text-dim);}
+
+/* ===================================================================
+   ホーム
+   =================================================================== */
+/* ストリーク＋デイリーゴールのバナー */
+.streak-banner{
+  display:flex; align-items:center; gap:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+  border:1px solid var(--line-soft); border-radius:var(--radius); padding:16px 18px; margin:6px 0 16px;
+}
+.streak-flame{font-size:30px; line-height:1;}
+.streak-info{flex:1;}
+.streak-num{font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; line-height:1;}
+.streak-num small{font-size:13px; font-weight:500; color:var(--text-dim); margin-left:4px;}
+.streak-label{font-size:11px; color:var(--text-dim); margin-top:3px;}
+/* リング */
+.ring-wrap{position:relative; width:64px; height:64px; flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-text{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.ring-text b{font-family:'Space Grotesk',sans-serif; font-size:16px; line-height:1;}
+.ring-text span{font-size:9px; color:var(--text-dim); margin-top:1px;}
+
+/* メインCTA */
+.cta-review{position:relative; margin-bottom:12px;}
+.cta-review .badge-count{
+  position:absolute; top:-8px; right:-6px; min-width:28px; height:28px; padding:0 8px;
+  background:var(--good); color:#04361f; border-radius:99px; font-family:'Space Grotesk',sans-serif;
+  font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(55,217,138,0.4);
+}
+.home-cta{display:flex; flex-direction:column; gap:10px;}
+.home-cta .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+/* 進捗チップ（color dot付き） */
+.prog-chips{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:18px 0;}
+.chip{background:rgba(255,255,255,0.04); border:1px solid var(--line-faint); border-radius:13px; padding:12px 6px; text-align:center;}
+.chip .n{font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; line-height:1;}
+.chip .l{font-size:10px; color:var(--text-dim); margin-top:6px; display:flex; align-items:center; justify-content:center; gap:4px;}
+.dot{width:7px; height:7px; border-radius:99px; display:inline-block;}
+
+/* マスター率バー */
+.master-bar{height:8px; border-radius:99px; background:rgba(255,255,255,0.10); overflow:hidden; margin:2px 0 4px;}
+.master-bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--good),#7ef0b6); border-radius:99px; transition:width .4s ease;}
+.master-bar-label{font-size:11px; color:var(--text-dim); text-align:right; margin-bottom:18px;}
+
+/* ヒートマップ（直近14日） */
+.heat{display:flex; gap:5px; justify-content:space-between; margin:4px 0 18px;}
+.heat .cell{flex:1; aspect-ratio:1; border-radius:4px; background:rgba(255,255,255,0.06);}
+.heat .cell.l1{background:rgba(55,217,138,0.35);}
+.heat .cell.l2{background:rgba(55,217,138,0.6);}
+.heat .cell.l3{background:rgba(55,217,138,0.9);}
+
+/* 実績バッジ */
+.section-title{font-size:13px; font-weight:700; color:var(--text-dim); margin:20px 2px 10px; letter-spacing:0.04em;}
+.badges{display:flex; gap:10px; flex-wrap:wrap;}
+.badge{display:flex; flex-direction:column; align-items:center; gap:4px; width:64px;}
+.badge .ic{width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(255,255,255,0.05); border:1px solid var(--line-faint);}
+.badge.earned .ic{background:linear-gradient(180deg, rgba(233,196,92,0.25), rgba(233,196,92,0.08)); border-color:var(--gold);}
+.badge.locked{opacity:0.35;}
+.badge .nm{font-size:9px; color:var(--text-dim); text-align:center; line-height:1.3;}
+
+/* 有料ティザー（ロック） */
+.teaser{
+  margin-top:18px; padding:18px; border-radius:var(--radius); position:relative; overflow:hidden;
+  background:linear-gradient(135deg, rgba(16,73,47,0.6), rgba(7,36,24,0.6));
+  border:1px solid var(--line-soft); cursor:pointer;
+}
+.teaser .lock{position:absolute; top:14px; right:16px; font-size:18px; opacity:0.7;}
+.teaser .tt{font-size:15px; font-weight:700;}
+.teaser .td{font-size:12px; color:var(--text-dim); margin-top:6px; line-height:1.6;}
+.teaser .pill{display:inline-block; margin-top:10px; font-size:11px; font-weight:700; color:var(--gold); border:1px solid var(--gold); border-radius:99px; padding:4px 12px;}
+
+.hint{margin-top:18px; padding:16px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px dashed var(--line-soft); font-size:13px; color:var(--text-dim); line-height:1.7;}
+.hint b{color:var(--text);}
+.footer-note{text-align:center; font-size:11px; color:rgba(255,255,255,0.28); padding:26px 0 6px;}
+
+/* ===================================================================
+   学習画面
+   =================================================================== */
+.study-top{display:flex; align-items:center; justify-content:space-between; padding:18px 2px 8px;}
+.study-top .quit{font-size:13px; color:var(--text-dim); padding:8px 6px;}
+.study-mode-tag{font-size:12px; color:var(--gold); font-weight:700; letter-spacing:0.04em;}
+.session-meta{font-size:13px; color:var(--text-dim); font-weight:500;}
+.session-meta b{color:var(--gold); font-family:'Space Grotesk',sans-serif; font-size:16px;}
+.progress{height:7px; border-radius:99px; background:rgba(255,255,255,0.10); overflow:hidden; margin:2px 2px 20px;}
+.progress > i{display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--good),#7ef0b6); border-radius:99px; transition:width .35s ease;}
+
+.card-wrap{perspective:1400px; margin-bottom:14px;}
+.card{position:relative; width:100%; min-height:330px; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.4,.18,.2,1); cursor:pointer;}
+.card.flipped{transform:rotateY(180deg);}
+.face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px 24px; border-radius:24px; border:2px solid var(--line); box-shadow:var(--shadow);}
+.face-front{background:radial-gradient(130% 90% at 50% 0%, var(--pitch-light), var(--pitch));}
+.cat-tag{position:absolute; top:16px; left:16px; font-size:10px; font-weight:700; color:var(--text-dim); display:flex; align-items:center; gap:5px; letter-spacing:0.03em;}
+.speak-btn{position:absolute; top:12px; right:12px; width:42px; height:42px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid var(--line-soft); display:flex; align-items:center; justify-content:center; font-size:18px;}
+.speak-btn:active{transform:scale(0.9);}
+.face-front .en{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:30px; line-height:1.25; letter-spacing:-0.01em;}
+.face-front .tap{position:absolute; bottom:18px; font-size:12px; color:var(--text-dim); letter-spacing:0.06em;}
+.face-back{transform:rotateY(180deg); background:radial-gradient(130% 90% at 50% 0%, #103a51, #0b2c3e); border-color:rgba(255,255,255,0.55);}
+.face-back .en-small{font-family:'Space Grotesk',sans-serif; font-size:15px; color:rgba(255,255,255,0.55); margin-bottom:12px;}
+.face-back .ja{font-size:26px; font-weight:700; line-height:1.4;}
+.face-back .memo{margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.18); font-size:13.5px; color:rgba(255,255,255,0.85); line-height:1.7; max-width:92%;}
+
+.judge{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; opacity:0; pointer-events:none; transition:opacity .25s ease;}
+.judge.show{opacity:1; pointer-events:auto;}
+.btn-again{background:rgba(255,255,255,0.06); border:2px solid #fff; color:#fff;}
+.btn-good{background:linear-gradient(180deg,var(--good),#23b873); color:#04361f; border:2px solid transparent; box-shadow:0 10px 24px rgba(55,217,138,0.25);}
+.judge .btn{padding:17px 10px; font-weight:700;}
+.judge .sub{display:block; font-size:11px; font-weight:500; opacity:0.8; margin-top:3px;}
+.flip-help{text-align:center; font-size:11px; color:var(--text-dim); margin-top:13px;}
+
+/* ===================================================================
+   サマリー / 達成
+   =================================================================== */
+.done-wrap{text-align:center; padding:34px 10px;}
+.trophy{font-size:66px; line-height:1; margin-bottom:8px; animation:pop .6s cubic-bezier(.2,1.4,.4,1) both;}
+@keyframes pop{0%{transform:scale(0) rotate(-20deg);}100%{transform:scale(1) rotate(0);}}
+.done-wrap .en-title{font-family:'Space Grotesk',sans-serif; letter-spacing:0.3em; font-size:12px; color:var(--gold); text-transform:uppercase;}
+.done-wrap h2{font-size:24px; font-weight:900; margin:6px 0;}
+.done-wrap .lead{color:var(--text-dim); font-size:14px; line-height:1.8; margin:10px 0 22px;}
+.sum-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 24px;}
+.sum-stat{background:rgba(255,255,255,0.04); border:1px solid var(--line-faint); border-radius:14px; padding:16px 6px;}
+.sum-stat .n{font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; line-height:1;}
+.sum-stat .n.good{color:var(--good);} .sum-stat .n.gold{color:var(--gold);} .sum-stat .n.flame{color:var(--flame);}
+.sum-stat .l{font-size:10px; color:var(--text-dim); margin-top:6px;}
+
+/* ===================================================================
+   デッキ選択
+   =================================================================== */
+.deck-list{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
+.deck-row{display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid var(--line-faint); border-radius:14px; padding:15px 16px; cursor:pointer; transition:background .15s;}
+.deck-row:active{background:rgba(255,255,255,0.08);}
+.deck-row.all{border-color:var(--gold); background:linear-gradient(135deg, rgba(233,196,92,0.12), rgba(255,255,255,0.02));}
+.deck-row .dk-dot{width:12px; height:12px; border-radius:99px; flex-shrink:0;}
+.deck-row .dk-info{flex:1;}
+.deck-row .dk-name{font-size:15px; font-weight:700;}
+.deck-row .dk-sub{font-size:11px; color:var(--text-dim); margin-top:2px;}
+.deck-row .dk-mini{font-size:10px; color:var(--text-dim); margin-top:5px;}
+.deck-row .dk-mini b{color:var(--good);}
+.deck-row .dk-go{font-size:18px; color:var(--text-dim);}
+
+/* ===================================================================
+   管理
+   =================================================================== */
+.section-head{display:flex; align-items:center; justify-content:space-between; padding:22px 2px 14px;}
+.section-head h2{font-size:20px; font-weight:900; margin:0;}
+.back-link{font-size:13px; color:var(--text-dim); padding:8px 6px;}
+.term-form{background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border:1px solid var(--line-soft); border-radius:var(--radius); padding:18px; margin-bottom:18px;}
+.term-form.editing{border-color:var(--gold);}
+.form-title{font-size:14px; font-weight:700; margin-bottom:14px; color:var(--gold);}
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px;}
+.field input, .field textarea, .field select{width:100%; padding:13px 14px; border-radius:11px; background:rgba(0,0,0,0.22); border:1px solid var(--line-soft); color:var(--text); font-family:inherit; font-size:15px; resize:vertical;}
+.field input.en-input{font-family:'Space Grotesk',sans-serif;}
+.field input:focus, .field textarea:focus, .field select:focus{outline:none; border-color:var(--gold);}
+.form-actions{display:flex; gap:10px; margin-top:6px;}
+.form-actions .btn{padding:13px;}
+
+.tools-row{display:flex; gap:10px; margin-bottom:16px;}
+.search-box{width:100%; padding:12px 14px; border-radius:11px; background:rgba(0,0,0,0.22); border:1px solid var(--line-soft); color:var(--text); font-family:inherit; font-size:14px; margin-bottom:12px;}
+.cat-pills{display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:12px; -webkit-overflow-scrolling:touch;}
+.cat-pills::-webkit-scrollbar{display:none;}
+.pill-btn{flex-shrink:0; font-size:12px; padding:7px 13px; border-radius:99px; background:rgba(255,255,255,0.05); border:1px solid var(--line-faint); color:var(--text-dim); white-space:nowrap;}
+.pill-btn.active{background:rgba(233,196,92,0.18); border-color:var(--gold); color:var(--gold); font-weight:700;}
+
+.term-list{display:flex; flex-direction:column; gap:9px;}
+.term-row{display:flex; align-items:center; gap:11px; background:rgba(255,255,255,0.04); border:1px solid var(--line-faint); border-radius:13px; padding:13px 14px;}
+.term-row .st-dot{width:9px; height:9px; border-radius:99px; flex-shrink:0;}
+.term-row .info{flex:1; min-width:0;}
+.term-row .t-en{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.term-row .t-ja{font-size:13px; color:var(--text-dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.term-row .t-cat{font-size:10px; color:rgba(255,255,255,0.4); margin-top:3px;}
+.row-actions{display:flex; gap:6px; flex-shrink:0;}
+.icon-btn{width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.05); border:1px solid var(--line-faint); font-size:15px;}
+.icon-btn:active{transform:scale(0.92);}
+.count-badge{font-size:13px; color:var(--text-dim);}
+.empty-note{text-align:center; color:var(--text-dim); font-size:14px; padding:24px; line-height:1.7;}
+
+/* ===================================================================
+   オンボーディング / モーダル
+   =================================================================== */
+.overlay{position:fixed; inset:0; z-index:40; background:rgba(4,18,12,0.82); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:24px;}
+.overlay.show{display:flex;}
+.modal{max-width:420px; width:100%; background:linear-gradient(180deg, var(--pitch-light), var(--pitch-dark)); border:1px solid var(--line-soft); border-radius:22px; padding:28px 24px; box-shadow:var(--shadow); text-align:center; animation:pop .4s cubic-bezier(.2,1.2,.4,1) both;}
+.modal .ic{font-size:46px; margin-bottom:6px;}
+.modal h3{font-size:21px; font-weight:900; margin:6px 0 4px;}
+.modal .mark{font-family:'Space Grotesk',sans-serif; letter-spacing:0.3em; font-size:11px; color:var(--gold); text-transform:uppercase;}
+.modal p{color:var(--text-dim); font-size:14px; line-height:1.8; margin:14px 0;}
+.modal .feat{text-align:left; margin:16px 0; display:flex; flex-direction:column; gap:13px;}
+.modal .feat > div{font-size:14px; display:flex; gap:11px; align-items:flex-start; line-height:1.6;}
+.modal .feat > div > div{flex:1;}
+.modal .feat > div > div b{font-size:15px;}
+.modal .feat .fic{font-size:18px; flex-shrink:0; margin-top:1px;}
+.goal-opts{display:flex; flex-direction:column; gap:10px; margin:16px 0;}
+.goal-opt{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-radius:13px; background:rgba(255,255,255,0.04); border:2px solid var(--line-faint); cursor:pointer;}
+.goal-opt.sel{border-color:var(--gold); background:rgba(233,196,92,0.1);}
+.goal-opt .gl{font-size:15px; font-weight:700;} .goal-opt .gr{font-size:12px; color:var(--text-dim);}
+
+/* トースト / 祝福 */
+.toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%) translateY(20px); background:rgba(10,40,28,0.96); border:1px solid var(--gold); color:var(--text); padding:13px 22px; border-radius:99px; font-size:14px; font-weight:500; opacity:0; pointer-events:none; transition:all .3s ease; z-index:60; box-shadow:var(--shadow);}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.celebrate{position:fixed; left:50%; top:22%; transform:translateX(-50%) scale(0.7); z-index:60; text-align:center; opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,1.3,.4,1);}
+.celebrate.show{opacity:1; transform:translateX(-50%) scale(1);}
+.celebrate .cic{font-size:50px;} .celebrate .ct{font-weight:900; font-size:18px; margin-top:4px;} .celebrate .cs{font-size:12px; color:var(--gold);}
+</style>
+</head>
+
+<body>
+
+<!-- ピッチのライン（背景装飾） -->
+<svg class="field-lines" viewBox="0 0 560 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2">
+    <rect x="20" y="20" width="520" height="860" rx="6"/>
+    <line x1="20" y1="450" x2="540" y2="450"/>
+    <circle cx="280" cy="450" r="78"/>
+    <circle cx="280" cy="450" r="4" fill="rgba(255,255,255,0.13)"/>
+    <rect x="150" y="20" width="260" height="120"/>
+    <rect x="215" y="20" width="130" height="55"/>
+    <rect x="150" y="760" width="260" height="120"/>
+    <rect x="215" y="825" width="130" height="55"/>
+  </g>
+</svg>
+
+<div class="app">
+
+  <!-- ============ ホーム ============ -->
+  <section id="screen-home" class="screen active">
+    <header class="brand">
+      <div class="mark">FIFA Agent Exam</div>
+      <h1>エージェント用語マスター</h1>
+      <div class="sub">夜のピッチで、覚えるまで反復する</div>
+    </header>
+    <div id="home-body"><!-- JSで描画 --></div>
+    <div class="footer-note">FIFAエージェント試験 用語暗記 / v2.0</div>
+  </section>
+
+  <!-- ============ 学習 ============ -->
+  <section id="screen-study" class="screen">
+    <div class="study-top">
+      <button class="quit" onclick="quitReview()">← やめる</button>
+      <span class="study-mode-tag" id="mode-tag">今日の復習</span>
+      <div class="session-meta">残り <b id="remaining">0</b></div>
+    </div>
+    <div class="progress"><i id="progress-bar"></i></div>
+
+    <div class="card-wrap">
+      <div class="card" id="card" onclick="flipCard()">
+        <div class="face face-front">
+          <div class="cat-tag" id="card-cat"></div>
+          <button class="speak-btn" onclick="event.stopPropagation(); speakCurrent()" title="発音を聞く">🔊</button>
+          <div class="en" id="card-en">—</div>
+          <div class="tap">タップで日本語を表示</div>
+        </div>
+        <div class="face face-back">
+          <button class="speak-btn" onclick="event.stopPropagation(); speakCurrent()" title="発音を聞く">🔊</button>
+          <div class="en-small" id="card-en-small">—</div>
+          <div class="ja" id="card-ja">—</div>
+          <div class="memo" id="card-memo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="judge" id="judge">
+      <button class="btn btn-again" onclick="answer(false)">もう一度<span class="sub">まだあやしい</span></button>
+      <button class="btn btn-good" onclick="answer(true)">思い出せた<span class="sub">バッチリ</span></button>
+    </div>
+    <div class="flip-help">スペース＝めくる ／ 1＝もう一度 ／ 2＝思い出せた</div>
+  </section>
+
+  <!-- ============ サマリー / 達成 ============ -->
+  <section id="screen-summary" class="screen">
+    <div id="summary-body"></div>
+  </section>
+
+  <!-- ============ デッキ選択（完全マスターモード） ============ -->
+  <section id="screen-deck" class="screen">
+    <div class="section-head">
+      <h2>完全マスターモード</h2>
+      <button class="back-link" onclick="showScreen('home')">← 戻る</button>
+    </div>
+    <div class="hint" style="margin-top:0;">選んだデッキを<b>全部「思い出せた」になるまで</b>くり返します。試験前の追い込みに最適。</div>
+    <div class="deck-list" id="deck-list"></div>
+  </section>
+
+  <!-- ============ 管理 ============ -->
+  <section id="screen-manage" class="screen">
+    <div class="section-head">
+      <h2>用語の管理</h2>
+      <button class="back-link" onclick="showScreen('home')">ホームへ →</button>
+    </div>
+
+    <div class="term-form" id="term-form">
+      <div class="form-title" id="form-title">＋ 新しい用語を追加</div>
+      <input type="hidden" id="edit-id" value="">
+      <div class="field"><label>英語</label><input type="text" id="in-en" class="en-input" placeholder="on behalf of" autocomplete="off"></div>
+      <div class="field"><label>日本語</label><input type="text" id="in-ja" placeholder="〜を代理して" autocomplete="off"></div>
+      <div class="field"><label>カテゴリ</label><select id="in-cat"></select></div>
+      <div class="field"><label>メモ（任意）</label><textarea id="in-memo" rows="2" placeholder="例文・覚え方・補足など"></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="btn-cancel" onclick="cancelEdit()" style="display:none;">キャンセル</button>
+        <button class="btn btn-primary" id="btn-save" onclick="saveTermForm()">追加する</button>
+      </div>
+    </div>
+
+    <div class="tools-row">
+      <button class="btn btn-ghost btn-sm" onclick="exportData()" style="flex:1;">⬇ バックアップ書出</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-file').click()" style="flex:1;">⬆ 読み込み</button>
+      <input type="file" id="import-file" accept="application/json" style="display:none" onchange="handleImport(event)">
+    </div>
+
+    <input type="text" class="search-box" id="search" placeholder="🔍 用語を検索" oninput="renderManageList()">
+    <div class="cat-pills" id="cat-pills"></div>
+
+    <div class="section-head" style="padding:0 2px 12px;"><span class="count-badge">表示 <b id="manage-count">0</b> 語</span></div>
+    <div class="term-list" id="term-list"></div>
+    <div class="footer-note">バックアップは定期的に。端末変更やキャッシュ削除で消えるのを防げます。</div>
+  </section>
+
+</div>
+
+<!-- オーバーレイ（オンボーディング/ゴール変更） -->
+<div class="overlay" id="overlay"><div class="modal" id="modal-content"></div></div>
+
+<div class="toast" id="toast"></div>
+<div class="celebrate" id="celebrate"></div>
+
+<script>
+/* ===================================================================
+   夜レジ式 FIFAエージェント用語マスター — ロジック
+   保存はすべて localStorage。
+   - terms : 用語＋間隔反復(Leitner)の状態
+   - prog  : ストリーク/ゴール/XP/実績/学習履歴
+   =================================================================== */
+
+const TERMS_KEY = 'fifa_terms_v2';
+const PROG_KEY  = 'fifa_prog_v2';
+
+/* ---- 安全なストレージ（Safariのファイル直開きなどでlocalStorageが使えなくても落ちない） ----
+   localStorageが例外を投げる環境では、メモリ上に一時保存して動作だけは継続する。 */
+const memStore = {};
+let storageOK = true;
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ storageOK=false; return (k in memStore)?memStore[k]:null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ storageOK=false; memStore[k]=v; } },
+  remove(k){ try{ localStorage.removeItem(k); }catch(e){ storageOK=false; delete memStore[k]; } }
+};
+
+/* ---- カテゴリ（デッキ）定義 ---- */
+const CATS = [
+  {key:'def',     name:'FFAR定義語',         dot:'#e9c45c'},
+  {key:'fee',     name:'報酬・手数料',        dot:'#37d98a'},
+  {key:'rep',     name:'契約・代理',          dot:'#5ec8ff'},
+  {key:'comp',    name:'利益相反・コンプラ',   dot:'#ff8f6b'},
+  {key:'transfer',name:'移籍・登録',          dot:'#b88bff'},
+  {key:'dispute', name:'紛争・規律',          dot:'#ff6b9d'},
+  {key:'legal',   name:'法律英語',            dot:'#9fe0c4'},
+  {key:'reg',     name:'関連規則・固有名',     dot:'#ffd27f'},
+  {key:'phrase',  name:'試験頻出フレーズ',     dot:'#cfd8ff'},
+];
+const catName = k => (CATS.find(c=>c.key===k)||{}).name || 'その他';
+const catDot  = k => (CATS.find(c=>c.key===k)||{}).dot  || '#888';
+
+/* ---- 初期データ（全て公式FFAR本文で裏取り済み。捏造語は排除） ---- */
+const SEED = [
+  // ▼ FFAR定義語
+  {en:'Football Agent', ja:'フットボールエージェント（代理人）', cat:'def', memo:'Football Agent Servicesを行うためFIFAにライセンスされた「自然人（個人）」。法人ではなく個人が免許を持つ。'},
+  {en:'Football Agent Services', ja:'代理人業務', cat:'def', memo:'Transaction成立を目的に、Clientのために行うサッカー関連サービス（交渉・連絡を含む）。'},
+  {en:'Client', ja:'クライアント（依頼者）', cat:'def', memo:'公式FFAR定義では5種類＝member association／club／player／coach／Single-Entity League。※公式FFAR本文どおり。受験する年の最新版で要確認。'},
+  {en:'Representation Agreement', ja:'代理契約', cat:'def', memo:'代理人がClientに業務を提供する法的関係を成立させる「書面」合意。必ず書面。'},
+  {en:'Transaction', ja:'取引（移籍など）', cat:'def', memo:'選手の雇用・登録・登録抹消、コーチの雇用、登録の移転、雇用条件の創設／終了／変更など。'},
+  {en:'Individual', ja:'個人（選手またはコーチ）', cat:'def', memo:'FFARでは player または coach をまとめて Individual と呼ぶ。'},
+  {en:'Engaging Entity', ja:'起用する側の組織', cat:'def', memo:'選手・コーチを雇用しうる club／member association／Single-Entity League。'},
+  {en:'Releasing Entity', ja:'手放す側の組織', cat:'def', memo:'移籍で選手・コーチが離れていく側の club／member association／Single-Entity League。'},
+  {en:'Single-Entity League', ja:'単一事業体リーグ', cat:'def', memo:'協会傘下でリーグを運営し全クラブ選手の雇用主等を担う組織。※"Major League"はFFARに存在せず、正しくはこれ。'},
+  {en:'Connected Football Agent', ja:'連結された代理人', cat:'def', memo:'同一Agency所属・親族・収益共有などで別の代理人と「連結」している代理人。'},
+  {en:'Agency', ja:'エージェンシー（代理人事務所）', cat:'def', memo:'1人以上のFootball Agentの業務の受け皿となる組織・会社。'},
+  {en:'Service fee', ja:'サービスフィー（手数料）', cat:'def', memo:'Representation Agreementに基づき代理人がClientに請求できる手数料。'},
+  {en:'Remuneration', ja:'報酬（総額）', cat:'def', memo:'雇用契約上の総報酬。base salary・sign-on fee・条件付ボーナスを含む。手数料計算の基礎。'},
+  {en:'Other Services', ja:'その他サービス', cat:'def', memo:'代理人業務以外のサービス（法務・財務助言・スカウト等）。'},
+  {en:'Approach', ja:'接触（アプローチ）', cat:'def', memo:'Clientやその関係者への接触（対面・電子・第三者経由）行為。'},
+  {en:'Specified Transaction', ja:'特定された取引', cat:'def', memo:'当事者がすべて特定・確定しているTransaction。'},
+  {en:'engage', ja:'起用する', cat:'def', memo:'Clientが代理人を「起用する」。Clientの定義 "may engage a Football Agent" で頻出。'},
+
+  // ▼ 報酬・手数料
+  {en:'Service fee cap', ja:'サービスフィー上限', cat:'fee', memo:'手数料の上限。Individual=5%/3%、Engaging Entity=5%/3%、双方代理=10%/6%、Releasing Entity=10%（年報酬USD20万が境）。'},
+  {en:'Permitted dual representation', ja:'許容される双方代理', cat:'fee', memo:'IndividualとEngaging Entityの双方を代理。双方の事前書面同意が条件で例外的に許容。'},
+  {en:'Transfer compensation', ja:'移籍金', cat:'fee', memo:'Releasing Entity側の手数料算定の基礎となる移籍金。'},
+  {en:'Pro-rata basis', ja:'按分（プロラタ）で', cat:'fee', memo:'実際に受領したRemunerationに応じて比例計算する。'},
+  {en:'Instalments', ja:'分割払い', cat:'fee', memo:'雇用契約期間中、3ヶ月ごとに支払う手数料の分割。'},
+  {en:'FIFA Clearing House', ja:'FIFA清算機関', cat:'fee', memo:'手数料の支払いを経由させるFIFAの清算機関。'},
+  {en:'Circumvention', ja:'潜脱（規制逃れ）', cat:'fee', memo:'上限規制を回避しようとする禁止行為。'},
+  {en:'Sign-on fee', ja:'契約一時金', cat:'fee', memo:'契約時の一時金。Remunerationに含まれる。'},
+
+  // ▼ 契約・代理
+  {en:'Representation', ja:'代理（の関係）', cat:'rep', memo:'代理人がClientを代理する関係（Art.12）。'},
+  {en:'concluding a Transaction', ja:'取引を成立させる', cat:'rep', memo:'代理人業務の目的＝Transactionをconclude（成立）させること。'},
+  {en:'Written agreement', ja:'書面契約', cat:'rep', memo:'Representation Agreementは必ず書面で結ぶ。'},
+  {en:'Exclusivity', ja:'独占性（独占／非独占）', cat:'rep', memo:'代理が独占的か否か。FIFAが開示する項目のひとつ。'},
+  {en:'Term of representation', ja:'代理契約の期間', cat:'rep', memo:'選手・コーチは最長2年、club・MAは期限の定めなし。'},
+  {en:'Termination', ja:'解除・終了', cat:'rep', memo:'契約を終了させること。'},
+  {en:'Eligibility requirements', ja:'適格要件', cat:'rep', memo:'ライセンス申請者が満たすべき要件（Art.5）。'},
+  {en:'Licence', ja:'ライセンス（免許）', cat:'rep', memo:'FIFAが個人に発行する代理人免許。個人専属・譲渡不可。'},
+  {en:'CPD', ja:'継続的専門研修', cat:'rep', memo:'Continuing Professional Development。免許維持のための年次研修。'},
+
+  // ▼ 利益相反・コンプラ
+  {en:'Conflict of interest', ja:'利益相反', cat:'comp', memo:'Clientを守るために制限される利害の衝突。'},
+  {en:'Dual representation', ja:'双方代理', cat:'comp', memo:'同一Transactionで双方を代理すること。原則禁止、例外のみ許容。'},
+  {en:'Prior explicit written consent', ja:'事前の明示的な書面同意', cat:'comp', memo:'双方代理に必要な、双方からの事前同意。'},
+  {en:'Disclosure', ja:'開示', cat:'comp', memo:'FIFAが代理人・Client・手数料額などを公表（Art.19）。'},
+  {en:'Fiduciary duty', ja:'受託者責任（忠実義務）', cat:'comp', memo:'依頼者のために誠実に行動する義務。'},
+  {en:'Inducement', ja:'誘引', cat:'comp', memo:'Clientを不当に誘い込むこと（禁止）。'},
+  {en:'Coercion', ja:'強要', cat:'comp', memo:'不当に強いること（禁止）。'},
+  {en:'Consideration', ja:'対価', cat:'comp', memo:'約束された対価。合意した手数料以外の金銭授受は禁止。'},
+
+  // ▼ 移籍・登録
+  {en:'International dimension', ja:'国際的要素', cat:'transfer', memo:'代理契約が国際性を持つ条件（Art.2）。国際性があるとFFARが適用。'},
+  {en:'Registration period', ja:'登録期間（移籍ウィンドウ）', cat:'transfer', memo:'選手登録が可能な期間。手数料の起算点にもなる。'},
+  {en:'Deregistration', ja:'登録抹消', cat:'transfer', memo:'選手のクラブ登録を抹消すること。'},
+  {en:'Protection of minors', ja:'未成年者保護', cat:'transfer', memo:'未成年に関わる手数料は原則禁止など。'},
+  {en:'Solidarity mechanism', ja:'連帯メカニズム', cat:'transfer', memo:'育成に貢献したクラブへ分配する仕組み（RSTP）。'},
+  {en:'Training compensation', ja:'育成補償金', cat:'transfer', memo:'選手を育てたクラブへの補償（RSTP）。'},
+  {en:'Just cause', ja:'正当事由', cat:'transfer', memo:'契約解除を正当化する事由。'},
+  {en:'Loan', ja:'レンタル移籍（期限付移籍）', cat:'transfer', memo:'期限を定めた移籍。'},
+
+  // ▼ 紛争・規律
+  {en:'Agents Chamber', ja:'代理人部門', cat:'dispute', memo:'Football Tribunal内で代理人の紛争を扱う部門（Art.20）。'},
+  {en:'Football Tribunal', ja:'フットボール裁判所', cat:'dispute', memo:'FIFAの紛争解決機関。'},
+  {en:'Jurisdiction', ja:'管轄権', cat:'dispute', memo:'紛争を裁定する権限（Art.20）。'},
+  {en:'FIFA Disciplinary Committee', ja:'FIFA規律委員会', cat:'dispute', memo:'制裁を科す権限を持つ（Art.21）。'},
+  {en:'Sanction', ja:'制裁', cat:'dispute', memo:'罰金などの処分。'},
+  {en:'Fine', ja:'罰金', cat:'dispute', memo:'金銭的な制裁。'},
+  {en:'Limitation period', ja:'時効・出訴期間', cat:'dispute', memo:'紛争は対象事象から2年以内。'},
+  {en:'Redress', ja:'救済', cat:'dispute', memo:'通常裁判所などで救済を求めること。'},
+
+  // ▼ 法律英語
+  {en:'Pursuant to', ja:'〜に従って／〜に基づき', cat:'legal', memo:'規則本文に頻出（pursuant to Article…）。'},
+  {en:'In accordance with', ja:'〜に従って', cat:'legal', memo:'本文に多数出現。'},
+  {en:'Subject to', ja:'〜を条件として／〜に従う', cat:'legal', memo:''},
+  {en:'Notwithstanding', ja:'〜にもかかわらず', cat:'legal', memo:''},
+  {en:'Whereby', ja:'それによって', cat:'legal', memo:''},
+  {en:'With respect to', ja:'〜に関して', cat:'legal', memo:''},
+  {en:'For the avoidance of doubt', ja:'疑義を避けるため', cat:'legal', memo:'条文の補足でよく使われる定型句。'},
+  {en:'Without prejudice to', ja:'〜の権利を害することなく', cat:'legal', memo:''},
+  {en:'Ex officio', ja:'職権で', cat:'legal', memo:'ラテン語。当事者の申立てなしに自ら行うこと。'},
+  {en:'Null and void', ja:'無効な', cat:'legal', memo:'自律的な交渉を制限する条項などは null and void（無効）。'},
+  {en:'Shall', ja:'〜しなければならない（義務）', cat:'legal', memo:'法令で義務を表す。'},
+  {en:'May not', ja:'〜してはならない（禁止）', cat:'legal', memo:''},
+  {en:'Entitled to', ja:'〜する権利がある', cat:'legal', memo:'手数料を受領する権利などの文脈。'},
+  {en:'Beneficial ownership', ja:'実質的所有', cat:'legal', memo:'名義でなく実質的に所有・支配していること。'},
+  {en:'Including but not limited to', ja:'〜を含むがこれに限らない', cat:'legal', memo:''},
+
+  // ▼ 関連規則・固有名
+  {en:'FFAR', ja:'FIFA代理人規則', cat:'reg', memo:'FIFA Football Agent Regulations。本規則の略。'},
+  {en:'RSTP', ja:'選手の地位・移籍規則', cat:'reg', memo:'Regulations on the Status and Transfer of Players。試験範囲。'},
+  {en:'FIFA Statutes', ja:'FIFA基本規程', cat:'reg', memo:''},
+  {en:'FIFA Code of Ethics', ja:'FIFA倫理規程', cat:'reg', memo:''},
+  {en:'Member association', ja:'加盟協会（MA）', cat:'reg', memo:'FIFAに加盟する各国協会。'},
+  {en:'Confederation', ja:'大陸連盟', cat:'reg', memo:'UEFA・AFCなど。'},
+  {en:'IFAB', ja:'国際サッカー評議会', cat:'reg', memo:'競技規則（ルール）を管理する組織。'},
+
+  // ▼ 試験頻出フレーズ（一般英語）
+  {en:'on behalf of', ja:'〜を代理して', cat:'phrase', memo:''},
+  {en:'preparatory', ja:'準備的な', cat:'phrase', memo:''},
+  {en:'for the purpose of', ja:'〜の目的で', cat:'phrase', memo:''},
+];
+
+/* ---- Leitner間隔（箱→日数）。覚えた=箱を1つ上げる／もう一度=箱1に戻す ---- */
+const INTERVALS = {1:1, 2:3, 3:7, 4:14, 5:30};
+const MASTER_BOX = 5; // 箱5到達でマスター扱い
+
+/* ---- デイリーゴール ---- */
+const GOALS = {
+  light:  {label:'軽め',     cards:10, newPerDay:6,  desc:'1日10枚 / 約5分'},
+  normal: {label:'ふつう',   cards:20, newPerDay:12, desc:'1日20枚 / 約10分'},
+  hard:   {label:'がっつり', cards:40, newPerDay:24, desc:'1日40枚 / 約20分'},
+};
+
+/* ---- 実績 ---- */
+const ACHIEVEMENTS = [
+  {id:'first',    icon:'⚽', name:'キックオフ',    cond:()=>prog.totalAnswered>=1},
+  {id:'study10',  icon:'👟', name:'はじめの一歩',  cond:()=>prog.totalAnswered>=10},
+  {id:'streak3',  icon:'🔥', name:'3日連続',       cond:()=>prog.streak>=3},
+  {id:'streak7',  icon:'🔥', name:'1週間連続',     cond:()=>prog.streak>=7},
+  {id:'master10', icon:'⭐', name:'10語マスター',  cond:()=>masteredCount()>=10},
+  {id:'master30', icon:'🌟', name:'30語マスター',  cond:()=>masteredCount()>=30},
+  {id:'masterAll',icon:'🏆', name:'全マスター',    cond:()=>terms.length>0 && masteredCount()>=terms.length},
+];
+
+/* ===================================================================
+   データ読み書き
+   =================================================================== */
+let terms = [];
+let prog  = {};
+
+function defaultProg(){
+  return {onboarded:false, goalKey:'normal', streak:0, lastStudyDay:null,
+          todayDate:null, todayCount:0, xp:0, totalAnswered:0, achievements:[], history:{}};
+}
+function loadAll(){
+  // 用語
+  const t = store.get(TERMS_KEY);
+  if(t){ try{ terms = JSON.parse(t); }catch(e){ terms=[]; } }
+  if(!t || !Array.isArray(terms) || terms.length===0){
+    terms = SEED.map(s => newTerm(s));
+    saveTerms();
+  }
+  // 進捗
+  const p = store.get(PROG_KEY);
+  if(p){ try{ prog = Object.assign(defaultProg(), JSON.parse(p)); }catch(e){ prog = defaultProg(); } }
+  else { prog = defaultProg(); }
+}
+function newTerm(s){
+  return {id:genId(), en:s.en, ja:s.ja, memo:s.memo||'', cat:s.cat||'def',
+          box:0, status:'new', due:null, reps:0, lapses:0};
+}
+function saveTerms(){ store.set(TERMS_KEY, JSON.stringify(terms)); }
+function saveProg(){ store.set(PROG_KEY, JSON.stringify(prog)); }
+function genId(){ return 'id_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+
+/* ===================================================================
+   日付ヘルパー（ローカル日付 YYYY-MM-DD）
+   =================================================================== */
+function todayStr(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addDays(str,n){ const d=new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return todayStr(d); }
+function shiftStr(n){ const d=new Date(); d.setDate(d.getDate()+n); return todayStr(d); }
+
+/* ===================================================================
+   集計
+   =================================================================== */
+const masteredCount = () => terms.filter(t=>t.status==='mastered').length;
+const learningCount = () => terms.filter(t=>t.status==='learning').length;
+const newCount      = () => terms.filter(t=>t.status==='new').length;
+
+/* 今日の復習対象を組み立てる（due復習 ＋ 新規は1日上限） */
+function buildTodayQueue(){
+  const today = todayStr();
+  const due = terms.filter(t => t.box>=1 && t.status!=='mastered' && t.due && t.due<=today);
+  const dueMastered = terms.filter(t => t.status==='mastered' && t.due && t.due<=today); // マスター語の定期再確認
+  const newAvail = terms.filter(t => t.box===0);
+  const newPerDay = GOALS[prog.goalKey].newPerDay;
+  const newToday = shuffle(newAvail.slice()).slice(0, newPerDay);
+  return shuffle(due.concat(dueMastered)).concat(shuffle(newToday));
+}
+function todayReviewCount(){ return buildTodayQueue().length; }
+
+/* ===================================================================
+   画面切り替え
+   =================================================================== */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='home')   renderHome();
+  if(name==='manage') renderManage();
+  if(name==='deck')   renderDeckList();
+}
+
+/* ===================================================================
+   ホーム描画
+   =================================================================== */
+function ring(pct, val, goal){
+  const r=28, c=2*Math.PI*r, off=c*(1-Math.min(pct,1));
+  return `<div class="ring-wrap"><svg width="64" height="64" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="${pct>=1?'var(--good)':'var(--gold)'}" stroke-width="6"
+      stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+  </svg><div class="ring-text"><b>${val}/${goal}</b><span>今日</span></div></div>`;
+}
+function heatmap(){
+  let cells='';
+  for(let i=13;i>=0;i--){
+    const d=shiftStr(-i), n=prog.history[d]||0;
+    const lv = n===0?'':(n<5?'l1':(n<15?'l2':'l3'));
+    cells += `<div class="cell ${lv}" title="${d}: ${n}枚"></div>`;
+  }
+  return `<div class="heat">${cells}</div>`;
+}
+function renderHome(){
+  const goal = GOALS[prog.goalKey];
+  const reviewN = todayReviewCount();
+  const total = terms.length, mc = masteredCount(), lc = learningCount(), nc = newCount();
+  const masterPct = total? Math.round(mc/total*100) : 0;
+  const todayPct = goal.cards? prog.todayCount/goal.cards : 0;
+
+  // 実績バッジ
+  const badges = ACHIEVEMENTS.map(a=>{
+    const got = prog.achievements.includes(a.id);
+    return `<div class="badge ${got?'earned':'locked'}"><div class="ic">${a.icon}</div><div class="nm">${a.name}</div></div>`;
+  }).join('');
+
+  // メインCTA：今日の復習（0ならねぎらい表示）
+  let mainCta;
+  if(reviewN>0){
+    mainCta = `<div class="cta-review">
+      <button class="btn btn-primary" onclick="startReview('srs')">▶ 今日の復習をする</button>
+      <span class="badge-count">${reviewN}</span></div>`;
+  }else{
+    mainCta = `<div class="cta-review"><button class="btn btn-line" onclick="showScreen('deck')">🎯 今日のノルマ完了！もっとやる</button></div>`;
+  }
+
+  // 保存が使えない環境（例：Safariでファイルを直接開いた場合）への注意
+  const warn = storageOK ? '' : `<div class="hint" style="margin-top:0;border-color:var(--gold);color:var(--text);">
+    ⚠️ <b>このままだと学習の記録が保存されません。</b><br>
+    <b>Google Chrome</b> で開くと記録が残ります。（または作者がネット上に公開すれば、どの端末でも保存OKになります）</div>`;
+
+  document.getElementById('home-body').innerHTML = warn + `
+    <div class="streak-banner">
+      <div class="streak-flame">${prog.streak>0?'🔥':'⚪'}</div>
+      <div class="streak-info">
+        <div class="streak-num">${prog.streak}<small>日連続</small></div>
+        <div class="streak-label">毎日1枚でも続けば記録が伸びる</div>
+      </div>
+      ${ring(todayPct, prog.todayCount, goal.cards)}
+    </div>
+
+    ${mainCta}
+    <div class="home-cta">
+      <div class="row2">
+        <button class="btn btn-line" onclick="showScreen('deck')">🎯 完全マスター</button>
+        <button class="btn btn-line" onclick="showScreen('manage')">⚙ 用語の管理</button>
+      </div>
+    </div>
+
+    <div class="prog-chips">
+      <div class="chip"><div class="n">${total}</div><div class="l">総語数</div></div>
+      <div class="chip"><div class="n" style="color:var(--good)">${mc}</div><div class="l"><span class="dot" style="background:var(--good)"></span>マスター</div></div>
+      <div class="chip"><div class="n" style="color:var(--learn)">${lc}</div><div class="l"><span class="dot" style="background:var(--learn)"></span>学習中</div></div>
+      <div class="chip"><div class="n" style="color:var(--new)">${nc}</div><div class="l"><span class="dot" style="background:var(--new)"></span>未学習</div></div>
+    </div>
+
+    <div class="master-bar"><i style="width:${masterPct}%"></i></div>
+    <div class="master-bar-label">マスター率 ${masterPct}%（${mc}/${total}）</div>
+
+    <div class="section-title">この2週間の学習</div>
+    ${heatmap()}
+
+    <div class="section-title">実績</div>
+    <div class="badges">${badges}</div>
+
+    <div class="teaser" onclick="teaserTap()">
+      <div class="lock">🔒</div>
+      <div class="tt">📝 試験問題演習 ＋ 日本語解説</div>
+      <div class="td">用語で土台ができたら、本番形式の問題演習と日本語のくわしい解説で合格をねらう。</div>
+      <div class="pill">近日公開（有料予定）</div>
+    </div>
+
+    <div class="hint"><b>このアプリの核：</b>「完全マスター」は全部「思い出せた」になるまで終わりません。「今日の復習」は間隔をあけて毎日少しずつ。両方つかうと最強です。
+      <br><br><button class="btn btn-ghost btn-sm" style="margin-top:4px;" onclick="openGoalModal()">⚙ 1日の目標：${goal.label}（変更）</button>
+    </div>
+  `;
+}
+function teaserTap(){ toast('近日公開予定！まずは用語をマスターしよう💪'); }
+
+/* ===================================================================
+   学習セッション（SRS / 完全マスター 共通）
+   =================================================================== */
+let session = null;
+
+function startReview(mode, catKey){
+  let ids, deckName, total;
+  if(mode==='srs'){
+    const q = buildTodayQueue();
+    if(q.length===0){ toast('今日の復習はありません'); return; }
+    ids = q.map(t=>t.id); deckName='今日の復習';
+  }else{ // master
+    let pool = catKey==='all' ? terms.slice() : terms.filter(t=>t.cat===catKey);
+    if(pool.length===0){ toast('このデッキに用語がありません'); return; }
+    ids = shuffle(pool.map(t=>t.id)); deckName = catKey==='all' ? '全用語' : catName(catKey);
+  }
+  session = {mode, queue:ids.slice(), total:ids.length, cleared:new Set(),
+             answered:0, rememberedCount:0, againCount:0, xp:0, deckName, catKey};
+  document.getElementById('mode-tag').textContent = mode==='srs' ? '今日の復習' : '完全マスター：'+deckName;
+  showScreen('study');
+  nextCard();
+}
+
+function nextCard(){
+  if(!session) return;
+  if(session.queue.length===0){ finishSession(); return; }
+  session.current = session.queue[0];
+  showCard();
+}
+function showCard(){
+  const term = terms.find(t=>t.id===session.current);
+  if(!term){ session.queue.shift(); nextCard(); return; }
+  document.getElementById('card').classList.remove('flipped');
+  document.getElementById('judge').classList.remove('show');
+  document.getElementById('card-cat').innerHTML = `<span class="dot" style="background:${catDot(term.cat)}"></span>${catName(term.cat)}`;
+  document.getElementById('card-en').textContent = term.en;
+  document.getElementById('card-en-small').textContent = term.en;
+  document.getElementById('card-ja').textContent = term.ja;
+  const m = document.getElementById('card-memo');
+  if(term.memo && term.memo.trim()){ m.textContent = '📝 ' + term.memo; m.style.display=''; }
+  else { m.style.display='none'; }
+  updateProgress();
+}
+function flipCard(){
+  const card = document.getElementById('card');
+  card.classList.toggle('flipped');
+  if(card.classList.contains('flipped')) document.getElementById('judge').classList.add('show');
+}
+
+/* 回答：覚えた=true / もう一度=false */
+function answer(remembered){
+  if(!session) return;
+  const card = document.getElementById('card');
+  if(!card.classList.contains('flipped')) return; // めくる前は無効
+  const id = session.queue.shift();
+  const term = terms.find(t=>t.id===id);
+  applyReview(term, remembered);   // Leitner更新（両モード共通）
+  recordStudy(remembered);         // ストリーク/XP/履歴
+  session.answered++;
+  if(remembered){
+    session.rememberedCount++; session.xp+=10; session.cleared.add(id);
+  }else{
+    session.againCount++; session.xp+=3;
+    // セッション内で後ろのランダム位置へ戻す（＝マスターするまで消えない）
+    if(session.queue.length===0) session.queue.push(id);
+    else{ const min=Math.min(2,session.queue.length); const pos=min+Math.floor(Math.random()*(session.queue.length-min+1)); session.queue.splice(pos,0,id); }
+  }
+  checkAchievements();
+  nextCard();
+}
+
+/* Leitner更新 */
+function applyReview(term, remembered){
+  if(remembered) term.box = Math.min((term.box||0)+1, MASTER_BOX);
+  else { term.box = 1; term.lapses = (term.lapses||0)+1; }
+  term.reps = (term.reps||0)+1;
+  const iv = INTERVALS[term.box] || 1;
+  term.due = addDays(todayStr(), iv);
+  term.status = term.box>=MASTER_BOX ? 'mastered' : (term.box>=1 ? 'learning' : 'new');
+  saveTerms();
+}
+
+/* ストリーク・XP・履歴の記録 */
+function recordStudy(remembered){
+  const t = todayStr();
+  if(prog.todayDate !== t){
+    // 日付が変わった → ストリーク判定
+    if(prog.lastStudyDay === shiftStr(-1)) prog.streak = (prog.streak||0)+1;
+    else if(prog.lastStudyDay === t){} else prog.streak = 1;
+    prog.lastStudyDay = t; prog.todayDate = t; prog.todayCount = 0;
+  }
+  prog.todayCount++;
+  prog.totalAnswered = (prog.totalAnswered||0)+1;
+  prog.xp = (prog.xp||0) + (remembered?10:3);
+  prog.history[t] = (prog.history[t]||0)+1;
+  saveProg();
+}
+
+function updateProgress(){
+  const done = session.cleared.size;
+  const pct = session.total? Math.round(done/session.total*100) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('remaining').textContent = session.total - done;
+}
+
+/* セッション完了 → サマリー */
+function finishSession(){
+  const s = session;
+  const rate = s.answered? Math.round(s.rememberedCount/s.answered*100) : 0;
+  const isMasterAll = s.mode==='master';
+  const nextDue = (s.mode==='srs') ? '明日また復習に出ます' : '';
+  session = null;
+  saveProg();
+
+  document.getElementById('summary-body').innerHTML = `
+    <div class="done-wrap">
+      <div class="trophy">${isMasterAll?'🏆':'✅'}</div>
+      <div class="en-title">${isMasterAll?'Full Marks':'Session Clear'}</div>
+      <h2>${isMasterAll? s.deckName+' 全マスター！':'今日の復習 完了！'}</h2>
+      <div class="lead">${isMasterAll? 'このデッキを全部「思い出せた」にしました。ナイスゲーム！':'今日もよく続けました。'+(nextDue?'<br>'+nextDue:'')}</div>
+      <div class="sum-stats">
+        <div class="sum-stat"><div class="n">${s.total}</div><div class="l">出題</div></div>
+        <div class="sum-stat"><div class="n good">${rate}%</div><div class="l">一発正解率</div></div>
+        <div class="sum-stat"><div class="n gold">+${s.xp}</div><div class="l">獲得XP</div></div>
+      </div>
+      <div class="sum-stats" style="margin-top:-8px;">
+        <div class="sum-stat"><div class="n flame">${prog.streak}</div><div class="l">🔥連続日数</div></div>
+        <div class="sum-stat"><div class="n">${masteredCount()}</div><div class="l">マスター済</div></div>
+        <div class="sum-stat"><div class="n">${prog.todayCount}</div><div class="l">今日の枚数</div></div>
+      </div>
+      <div class="home-cta">
+        ${isMasterAll? `<button class="btn btn-primary" onclick="startReview('master','${s.catKey}')">▶ もう一周する</button>`:''}
+        <button class="btn ${isMasterAll?'btn-line':'btn-primary'}" onclick="showScreen('home')">ホームへ戻る</button>
+      </div>
+    </div>`;
+  showScreen('summary');
+}
+
+function quitReview(){
+  if(confirm('学習をやめてホームに戻りますか？（今回の進捗のうち、各カードの間隔は保存されています）')){
+    session = null; showScreen('home');
+  }
+}
+
+/* 発音（Web Speech API・無料） */
+function speakCurrent(){
+  if(!session || !('speechSynthesis' in window)) { toast('この端末は読み上げ非対応です'); return; }
+  const term = terms.find(t=>t.id===session.current);
+  if(!term) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(term.en);
+  u.lang = 'en-US'; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+/* ===================================================================
+   実績チェック
+   =================================================================== */
+let celebrateQueue = [];
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!prog.achievements.includes(a.id) && a.cond()){
+      prog.achievements.push(a.id); saveProg();
+      celebrateQueue.push(a);
+    }
+  });
+  if(celebrateQueue.length) flushCelebrate();
+}
+function flushCelebrate(){
+  const a = celebrateQueue.shift(); if(!a) return;
+  const el = document.getElementById('celebrate');
+  el.innerHTML = `<div class="cic">${a.icon}</div><div class="ct">実績解除！</div><div class="cs">${a.name}</div>`;
+  el.classList.add('show');
+  setTimeout(()=>{ el.classList.remove('show'); if(celebrateQueue.length) setTimeout(flushCelebrate,400); }, 1600);
+}
+
+/* ===================================================================
+   デッキ選択
+   =================================================================== */
+function renderDeckList(){
+  const all = terms.length, allM = masteredCount();
+  let html = `<div class="deck-row all" onclick="startReview('master','all')">
+    <div class="dk-dot" style="background:var(--gold)"></div>
+    <div class="dk-info"><div class="dk-name">⚽ 全用語まとめて</div>
+    <div class="dk-sub">${all}語 / マスター ${allM}語</div></div>
+    <div class="dk-go">›</div></div>`;
+  CATS.forEach(c=>{
+    const list = terms.filter(t=>t.cat===c.key);
+    if(list.length===0) return;
+    const m = list.filter(t=>t.status==='mastered').length;
+    html += `<div class="deck-row" onclick="startReview('master','${c.key}')">
+      <div class="dk-dot" style="background:${c.dot}"></div>
+      <div class="dk-info"><div class="dk-name">${c.name}</div>
+      <div class="dk-sub">${list.length}語</div>
+      <div class="dk-mini">マスター <b>${m}</b> / ${list.length}</div></div>
+      <div class="dk-go">›</div></div>`;
+  });
+  document.getElementById('deck-list').innerHTML = html;
+}
+
+/* ===================================================================
+   管理（追加・編集・削除・検索・バックアップ）
+   =================================================================== */
+let manageFilter = 'all';
+function renderManage(){
+  // カテゴリselect
+  const sel = document.getElementById('in-cat');
+  if(!sel.options.length){ sel.innerHTML = CATS.map(c=>`<option value="${c.key}">${c.name}</option>`).join(''); }
+  // カテゴリpills
+  const pills = ['all'].concat(CATS.map(c=>c.key));
+  document.getElementById('cat-pills').innerHTML = pills.map(k=>{
+    const label = k==='all'?'すべて':catName(k);
+    return `<button class="pill-btn ${manageFilter===k?'active':''}" onclick="setManageFilter('${k}')">${label}</button>`;
+  }).join('');
+  renderManageList();
+}
+function setManageFilter(k){ manageFilter=k; renderManage(); }
+function renderManageList(){
+  const q = (document.getElementById('search').value||'').trim().toLowerCase();
+  let list = terms.slice();
+  if(manageFilter!=='all') list = list.filter(t=>t.cat===manageFilter);
+  if(q) list = list.filter(t => t.en.toLowerCase().includes(q) || t.ja.toLowerCase().includes(q) || (t.memo||'').toLowerCase().includes(q));
+  document.getElementById('manage-count').textContent = list.length;
+  const wrap = document.getElementById('term-list');
+  if(list.length===0){ wrap.innerHTML = '<div class="empty-note">該当する用語がありません。</div>'; return; }
+  const stColor = t => t.status==='mastered'?'var(--good)':(t.status==='learning'?'var(--learn)':'var(--new)');
+  wrap.innerHTML = list.map(t=>`
+    <div class="term-row">
+      <div class="st-dot" style="background:${stColor(t)}" title="${t.status}"></div>
+      <div class="info">
+        <div class="t-en">${esc(t.en)}</div>
+        <div class="t-ja">${esc(t.ja)}</div>
+        <div class="t-cat"><span class="dot" style="background:${catDot(t.cat)};margin-right:4px;"></span>${catName(t.cat)}</div>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" title="編集" onclick="startEdit('${t.id}')">✏️</button>
+        <button class="icon-btn" title="削除" onclick="deleteTerm('${t.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+function saveTermForm(){
+  const en=document.getElementById('in-en').value.trim();
+  const ja=document.getElementById('in-ja').value.trim();
+  const memo=document.getElementById('in-memo').value.trim();
+  const cat=document.getElementById('in-cat').value;
+  const editId=document.getElementById('edit-id').value;
+  if(!en||!ja){ toast('英語と日本語は必須です'); return; }
+  if(editId){
+    const t=terms.find(x=>x.id===editId);
+    if(t){ t.en=en; t.ja=ja; t.memo=memo; t.cat=cat; }
+    toast('更新しました');
+  }else{
+    terms.push(Object.assign(newTerm({en,ja,memo,cat})));
+    toast('追加しました');
+  }
+  saveTerms(); resetForm(); renderManage();
+}
+function startEdit(id){
+  const t=terms.find(x=>x.id===id); if(!t) return;
+  document.getElementById('edit-id').value=t.id;
+  document.getElementById('in-en').value=t.en;
+  document.getElementById('in-ja').value=t.ja;
+  document.getElementById('in-cat').value=t.cat;
+  document.getElementById('in-memo').value=t.memo||'';
+  document.getElementById('form-title').textContent='✏️ 用語を編集';
+  document.getElementById('btn-save').textContent='更新する';
+  document.getElementById('btn-cancel').style.display='';
+  document.getElementById('term-form').classList.add('editing');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelEdit(){ resetForm(); }
+function resetForm(){
+  document.getElementById('edit-id').value='';
+  document.getElementById('in-en').value='';
+  document.getElementById('in-ja').value='';
+  document.getElementById('in-memo').value='';
+  document.getElementById('form-title').textContent='＋ 新しい用語を追加';
+  document.getElementById('btn-save').textContent='追加する';
+  document.getElementById('btn-cancel').style.display='none';
+  document.getElementById('term-form').classList.remove('editing');
+}
+function deleteTerm(id){
+  const t=terms.find(x=>x.id===id); if(!t) return;
+  if(confirm(`「${t.en}」を削除しますか？`)){
+    terms=terms.filter(x=>x.id!==id); saveTerms(); renderManage(); toast('削除しました');
+  }
+}
+
+/* バックアップ書き出し / 読み込み（localStorage消失対策） */
+function exportData(){
+  const data = {v:2, exportedAt:new Date().toISOString(), terms, prog};
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url;
+  a.download = 'fifa-vocab-backup-' + todayStr() + '.json'; a.click();
+  URL.revokeObjectURL(url); toast('バックアップを書き出しました');
+}
+function handleImport(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.terms || !Array.isArray(data.terms)) throw new Error('形式が不正');
+      if(!confirm(`${data.terms.length}語を読み込みます。今のデータは上書きされます。よろしいですか？`)) return;
+      terms = data.terms;
+      if(data.prog) prog = Object.assign(defaultProg(), data.prog);
+      saveTerms(); saveProg(); renderManage(); toast('読み込みました');
+    }catch(err){ toast('読み込み失敗：ファイルを確認してください'); }
+  };
+  reader.readAsText(file);
+  ev.target.value='';
+}
+
+/* ===================================================================
+   オンボーディング / 目標設定モーダル
+   =================================================================== */
+let tmpGoal = 'normal';
+function openOnboarding(){
+  tmpGoal = prog.goalKey || 'normal';
+  document.getElementById('modal-content').innerHTML = `
+    <div class="mark">Welcome</div>
+    <div class="ic">⚽</div>
+    <h3>覚えるまで、終わらせない。</h3>
+    <p>FIFAエージェント試験の英語用語を、夜のピッチで反復マスター。英語が苦手でも大丈夫。</p>
+    <div class="feat">
+      <div><span class="fic">🔁</span><div><b>完全マスター</b><br>全部「思い出せた」になるまで終わらない学習法</div></div>
+      <div><span class="fic">📅</span><div><b>今日の復習</b><br>間隔をあけて毎日少しずつ、忘れる前に出題</div></div>
+      <div><span class="fic">🔊</span><div><b>発音</b><br>英語の読み上げで耳からも覚える</div></div>
+    </div>
+    <p style="margin-bottom:6px;">1日の目標を選んでね（あとで変えられます）</p>
+    <div class="goal-opts" id="goal-opts">${goalOptsHtml()}</div>
+    <button class="btn btn-primary" onclick="finishOnboarding()">はじめる！</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function goalOptsHtml(){
+  return Object.keys(GOALS).map(k=>{
+    const g=GOALS[k];
+    return `<div class="goal-opt ${tmpGoal===k?'sel':''}" onclick="pickGoal('${k}')">
+      <div class="gl">${g.label}</div><div class="gr">${g.desc}</div></div>`;
+  }).join('');
+}
+function pickGoal(k){ tmpGoal=k; document.getElementById('goal-opts').innerHTML = goalOptsHtml(); }
+function finishOnboarding(){
+  prog.onboarded=true; prog.goalKey=tmpGoal; saveProg();
+  document.getElementById('overlay').classList.remove('show');
+  renderHome();
+}
+function openGoalModal(){
+  tmpGoal = prog.goalKey;
+  document.getElementById('modal-content').innerHTML = `
+    <div class="ic">🎯</div>
+    <h3>1日の目標</h3>
+    <p>無理なく続けられる量に。忙しい日でも達成できる目標がコツ。</p>
+    <div class="goal-opts" id="goal-opts">${goalOptsHtml()}</div>
+    <button class="btn btn-primary" onclick="saveGoalModal()">決定</button>
+    <button class="btn btn-ghost" style="margin-top:8px;" onclick="closeOverlay()">キャンセル</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function saveGoalModal(){ prog.goalKey=tmpGoal; saveProg(); closeOverlay(); renderHome(); }
+function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+
+/* ===================================================================
+   ユーティリティ
+   =================================================================== */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastTimer;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),1900); }
+
+/* キーボード（PC） */
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('screen-study').classList.contains('active')) return;
+  const flipped = document.getElementById('card').classList.contains('flipped');
+  if(e.code==='Space'){ e.preventDefault(); flipCard(); }
+  else if(e.key==='1' && flipped) answer(false);
+  else if(e.key==='2' && flipped) answer(true);
+});
+
+/* ===================================================================
+   起動（何かあっても画面が真っ白にならないよう保護）
+   =================================================================== */
+try{
+  loadAll();
+  renderHome();
+  if(!prog.onboarded) openOnboarding();
+}catch(err){
+  console.error(err);
+  const body = document.getElementById('home-body');
+  if(body) body.innerHTML = '<div class="hint" style="margin-top:20px;"><b>うまく起動できませんでした。</b><br>お手数ですが、このファイルを<b>Google Chrome</b>で開きなおすか、ページを再読み込みしてみてください。</div>';
+}
+</script>
+</body>
+</html>
