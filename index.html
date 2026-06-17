@@ -868,14 +868,36 @@ function quitReview(){
   }
 }
 
-/* 発音（Web Speech API・無料） */
+/* 発音（Web Speech API・無料）
+   注意：Macには Zarvox/Deranged/Whisper 等の"おもしろ音声/ホラー音声"が混ざっている。
+   英語の標準的で聞き取りやすい声だけを選び、自然な速度で読み上げる。 */
+const BAD_VOICES = /Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Organ|Trinoids|Whisper|Wobble|Zarvox|Junior|Ralph|Kathy|Superstar|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Eddy|Flo|Wobble|Sing|Novelty/i;
+let enVoice = null;
+function pickEnglishVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const vs = speechSynthesis.getVoices();
+  if(!vs.length) return null;
+  // 高品質で標準的な英語音声を優先
+  const prefer = ['Samantha','Alex','Google US English','Microsoft Zira - English (United States)','Google UK English Female','Daniel','Karen','Victoria','Moira','Tessa','Serena'];
+  for(const n of prefer){ const v = vs.find(x=>x.name===n); if(v) return v; }
+  // 無ければ「英語」かつ「おもしろ音声でない」ものから
+  const en = vs.filter(v=>/^en/i.test(v.lang) && !BAD_VOICES.test(v.name));
+  return en.find(v=>/US/i.test(v.lang)) || en[0] || null;
+}
+if('speechSynthesis' in window){
+  enVoice = pickEnglishVoice();
+  // 音声リストは非同期で読み込まれることがあるので、読み込まれ次第選び直す
+  speechSynthesis.onvoiceschanged = () => { enVoice = pickEnglishVoice(); };
+}
 function speakCurrent(){
   if(!session || !('speechSynthesis' in window)) { toast('この端末は読み上げ非対応です'); return; }
   const term = terms.find(t=>t.id===session.current);
   if(!term) return;
   speechSynthesis.cancel();
+  if(!enVoice) enVoice = pickEnglishVoice();
   const u = new SpeechSynthesisUtterance(term.en);
-  u.lang = 'en-US'; u.rate = 0.9;
+  if(enVoice){ u.voice = enVoice; u.lang = enVoice.lang; } else { u.lang = 'en-US'; }
+  u.rate = 1.0; u.pitch = 1.0;   // 自然な速度・自然な高さ
   speechSynthesis.speak(u);
 }
 
